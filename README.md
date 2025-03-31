@@ -9,7 +9,34 @@ This project is a smart scheduling tool that helps users manage their time more 
 - **Frontend:** React.js, CSS, MUI  
 - **Backend:** Flask (Python)  
 - **Database:** MongoDB  
-- **Authentication:** Firebase  
+- **Authentication:** Firebase
+
+# 🛠️ Setup Instructions: Dynamic Scheduling Tool Environment
+
+Follow these steps to create and activate the Conda environment for the backend (Flask + NLP + Firebase + MongoDB integration).
+
+---
+
+## 📦 1. Create a new conda environment from `environment.yml`
+
+Make sure you have [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/distribution) installed.
+
+```
+conda env create -f environment.yml
+```
+
+## 🚀 2. Activate the environment
+
+```
+conda activate dynamic-scheduler
+```
+
+## 3. Verify the installation
+
+```
+python --version
+flask --version
+```
 
 ## Architecture
 

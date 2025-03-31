@@ -71,6 +71,7 @@ flask --version
 ## Wireframe
 
 Link to our Figma Wireframe: 
+
 <img width="482" alt="Screenshot 2025-03-31 at 7 17 44 PM" src="https://github.com/user-attachments/assets/2083de92-6dfa-4a14-bb86-3a4f79408648" />
 
 

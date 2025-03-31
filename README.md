@@ -39,4 +39,11 @@ This project is a smart scheduling tool that helps users manage their time more 
 ### Database (MongoDB)
 
 - Stores user profiles, events, and scheduling preferences  
-- Keeps a history of changes for tracking  
+- Keeps a history of changes for tracking
+
+## Wireframe
+
+Link to our Figma Wireframe: 
+
+https://www.figma.com/design/QuG2TkOvMMlQ7weMrOqUkn/Dynamic-Scheduling-Tool?node-id=0-1&p=f&t=aUObLjbO1UEJQVmK-0
+

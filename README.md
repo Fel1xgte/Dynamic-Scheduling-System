@@ -6,7 +6,7 @@ This project is a smart scheduling tool that helps users manage their time more 
 
 ## Tech Stack
 
-- **Frontend:** React.js, Tailwind CSS, MUI  
+- **Frontend:** React.js, CSS, MUI  
 - **Backend:** Flask (Python)  
 - **Database:** MongoDB  
 - **Authentication:** Firebase  

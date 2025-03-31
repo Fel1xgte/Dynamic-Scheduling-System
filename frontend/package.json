@@ -16,7 +16,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject", 
+    "dev": "concurrently \"cd backend && node index.js\" \"cd frontend && npm start\""
+
   },
   "eslintConfig": {
     "extends": [

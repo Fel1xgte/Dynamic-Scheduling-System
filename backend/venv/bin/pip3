@@ -1,4 +1,4 @@
-#!/Users/gracehe/Desktop/dynamic-scheduling-system/Dynamic-Scheduling-System/backend/venv/bin/python3
+#!/Users/guotaoer/Dynamic-Scheduling-System-1/backend/venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys

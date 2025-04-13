@@ -11,12 +11,6 @@ This project is a smart scheduling tool that helps users manage their time more 
 - **Database:** MongoDB  
 - **Authentication:** Firebase
 
-# 🛠️ Setup Instructions: Dynamic Scheduling Tool Environment
-
-Follow these steps to create and activate the Conda environment for the backend (Flask + NLP + Firebase + MongoDB integration).
-
----
-
 ## Setup Instructions
 
 ### Backend Setup

@@ -17,26 +17,61 @@ Follow these steps to create and activate the Conda environment for the backend 
 
 ---
 
-## 📦 1. Create a new conda environment from `environment.yml`
+## Setup Instructions
 
-Make sure you have [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/products/distribution) installed.
+### Backend Setup
+
+1. **Create and activate a virtual environment:**
+
+```bash
+cd backend
+python -m venv venv
+
+# On macOS/Linux
+source venv/bin/activate
+
+# On Windows
+venv\Scripts\activate
+```
+
+## 2. Install dependencies:
 
 ```
-conda env create -f environment.yml
+pip install flask flask-cors
 ```
 
-## 🚀 2. Activate the environment
+## 3. Run the backend server:
 
 ```
-conda activate dynamic-scheduler
+python app.py
+```
+The backend server will run on http://localhost:5000
+
+### Frontend Setup
+
+## 1. Install dependencies:
+
+```
+cd frontend
+npm install
 ```
 
-## 3. Verify the installation
+## 2. Run the frontend development server:
 
 ```
-python --version
-flask --version
+npm start
 ```
+The frontend will run on http://localhost:3000
+
+## Using the Application
+
+### Login Credentials
+
+Use the following credentials to log in:
+
+Username: admin
+
+Password: password123
 
 ## Architecture
 

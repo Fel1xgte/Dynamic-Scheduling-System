@@ -2,8 +2,21 @@ from flask import Flask, jsonify, request
 from datetime import datetime
 import json
 import uuid
+from flask_cors import CORS
+from app.database import init_db, create_user, get_user_by_email, create_event, get_events_by_user, get_event_by_id, update_event, delete_event
+from app.auth import hash_password, verify_password, generate_token, verify_token
+import os
+from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
+
+# Initialize Flask app
 app = Flask(__name__)
+CORS(app)
+
+# Initialize database
+init_db()
 
 # Add CORS headers to all responses
 @app.after_request
@@ -73,63 +86,174 @@ def home():
 # Events API
 @app.route('/api/events', methods=['GET'])
 def get_events():
+    # Get token from header
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    token = auth_header.split(' ')[1]
+    user_id = verify_token(token)
+    
+    if not user_id:
+        return jsonify({'error': 'Invalid token'}), 401
+    
+    # Get date range from query parameters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    # Get events
+    events = get_events_by_user(user_id, start_date, end_date)
+    
+    # Convert ObjectId to string for JSON serialization
+    for event in events:
+        event['_id'] = str(event['_id'])
+        event['user_id'] = str(event['user_id'])
+    
     return jsonify(events)
 
 @app.route('/api/events', methods=['POST'])
-def create_event():
-    data = request.get_json()
+def add_event():
+    # Get token from header
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Unauthorized'}), 401
     
-    # Validate required fields
-    if not data or not 'event_name' in data or not 'date' in data:
-        return jsonify({"error": "Missing required fields"}), 400
+    token = auth_header.split(' ')[1]
+    user_id = verify_token(token)
     
-    # Create new event
-    new_event = {
-        "id": str(uuid.uuid4()),
-        "event_name": data['event_name'],
-        "date": data['date'],
-        "host": data.get('host', 'Not specified'),
-        "category": data.get('category', 'Uncategorized'),
-        "participants": data.get('participants', []),
-        "agenda": data.get('agenda', ''),
-        "priority": data.get('priority', 1),
-        "created_at": datetime.now().isoformat()
+    if not user_id:
+        return jsonify({'error': 'Invalid token'}), 401
+    
+    data = request.json
+    title = data.get('title')
+    description = data.get('description')
+    date = data.get('date')
+    time = data.get('time')
+    priority = data.get('priority')
+    category = data.get('category')
+    
+    if not all([title, date, time, priority, category]):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    # Create event
+    event_data = {
+        'user_id': user_id,
+        'title': title,
+        'description': description,
+        'date': date,
+        'time': time,
+        'priority': priority,
+        'category': category
     }
     
-    events.append(new_event)
-    return jsonify(new_event), 201
+    event = create_event(event_data)
+    
+    # Convert ObjectId to string for JSON serialization
+    event['_id'] = str(event['_id'])
+    event['user_id'] = str(event['user_id'])
+    
+    return jsonify(event), 201
 
 @app.route('/api/events/<event_id>', methods=['GET'])
 def get_event(event_id):
-    event = next((e for e in events if e['id'] == event_id), None)
-    if event:
-        return jsonify(event)
-    return jsonify({"error": "Event not found"}), 404
-
-@app.route('/api/events/<event_id>', methods=['PUT'])
-def update_event(event_id):
-    data = request.get_json()
-    event = next((e for e in events if e['id'] == event_id), None)
+    # Get token from header
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    token = auth_header.split(' ')[1]
+    user_id = verify_token(token)
+    
+    if not user_id:
+        return jsonify({'error': 'Invalid token'}), 401
+    
+    # Get event
+    event = get_event_by_id(event_id)
     
     if not event:
-        return jsonify({"error": "Event not found"}), 404
+        return jsonify({'error': 'Event not found'}), 404
     
-    # Update event fields
-    for key in data:
-        if key != 'id' and key != 'created_at':  # Don't allow changing id or creation timestamp
-            event[key] = data[key]
+    # Check if user owns the event
+    if str(event['user_id']) != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Convert ObjectId to string for JSON serialization
+    event['_id'] = str(event['_id'])
+    event['user_id'] = str(event['user_id'])
     
     return jsonify(event)
 
-@app.route('/api/events/<event_id>', methods=['DELETE'])
-def delete_event(event_id):
-    global events
-    initial_length = len(events)
-    events = [e for e in events if e['id'] != event_id]
+@app.route('/api/events/<event_id>', methods=['PUT'])
+def update_event_route(event_id):
+    # Get token from header
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Unauthorized'}), 401
     
-    if len(events) < initial_length:
-        return jsonify({"message": "Event deleted successfully"})
-    return jsonify({"error": "Event not found"}), 404
+    token = auth_header.split(' ')[1]
+    user_id = verify_token(token)
+    
+    if not user_id:
+        return jsonify({'error': 'Invalid token'}), 401
+    
+    # Get event
+    event = get_event_by_id(event_id)
+    
+    if not event:
+        return jsonify({'error': 'Event not found'}), 404
+    
+    # Check if user owns the event
+    if str(event['user_id']) != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Get update data
+    data = request.json
+    
+    # Update event
+    success = update_event(event_id, data)
+    
+    if not success:
+        return jsonify({'error': 'Failed to update event'}), 500
+    
+    # Get updated event
+    updated_event = get_event_by_id(event_id)
+    
+    # Convert ObjectId to string for JSON serialization
+    updated_event['_id'] = str(updated_event['_id'])
+    updated_event['user_id'] = str(updated_event['user_id'])
+    
+    return jsonify(updated_event)
+
+@app.route('/api/events/<event_id>', methods=['DELETE'])
+def delete_event_route(event_id):
+    # Get token from header
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    token = auth_header.split(' ')[1]
+    user_id = verify_token(token)
+    
+    if not user_id:
+        return jsonify({'error': 'Invalid token'}), 401
+    
+    # Get event
+    event = get_event_by_id(event_id)
+    
+    if not event:
+        return jsonify({'error': 'Event not found'}), 404
+    
+    # Check if user owns the event
+    if str(event['user_id']) != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Delete event
+    success = delete_event(event_id)
+    
+    if not success:
+        return jsonify({'error': 'Failed to delete event'}), 500
+    
+    return jsonify({'message': 'Event deleted successfully'})
 
 # Tasks API
 @app.route('/api/tasks', methods=['GET'])
@@ -212,63 +336,64 @@ def delete_task(task_id):
     return jsonify({"error": "Task not found"}), 404
 
 # User authentication routes
-@app.route('/api/auth/register', methods=['POST'])
+@app.route('/api/register', methods=['POST'])
 def register():
-    data = request.get_json()
+    data = request.json
+    username = data.get('username')
+    email = data.get('email')
+    password = data.get('password')
     
-    # Check required fields
-    if not data or not all(k in data for k in ('username', 'email', 'password')):
-        return jsonify({"error": "Missing required fields"}), 400
+    if not all([username, email, password]):
+        return jsonify({'error': 'All fields are required'}), 400
     
     # Check if user already exists
-    if any(u['username'] == data['username'] for u in users):
-        return jsonify({"error": "Username already taken"}), 400
+    if get_user_by_email(email):
+        return jsonify({'error': 'Email already registered'}), 409
     
-    if any(u['email'] == data['email'] for u in users):
-        return jsonify({"error": "Email already registered"}), 400
+    # Hash password and create user
+    password_hash = hash_password(password)
+    user = create_user(username, email, password_hash)
     
-    # Create new user
-    new_user = {
-        "id": str(uuid.uuid4()),
-        "username": data['username'],
-        "email": data['email'],
-        "password_hash": data['password'],  # In a real app, hash the password
-        "created_at": datetime.now().isoformat()
-    }
-    
-    users.append(new_user)
-    
-    # Return user without password
-    user_response = {**new_user}
-    del user_response['password_hash']
-    
-    return jsonify(user_response), 201
-
-@app.route('/api/auth/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    
-    # Check required fields
-    if not data or not all(k in data for k in ('username', 'password')):
-        return jsonify({"error": "Missing username or password"}), 400
-    
-    # Find user by username
-    user = next((u for u in users if u['username'] == data['username']), None)
-    
-    if not user:
-        return jsonify({"error": "Invalid username or password"}), 401
-    
-    # Check password (in a real app, verify hash)
-    if user['password_hash'] != data['password']:
-        return jsonify({"error": "Invalid username or password"}), 401
-    
-    # Return user without password
-    user_response = {**user}
-    del user_response['password_hash']
+    # Generate token
+    token = generate_token(user['_id'])
     
     return jsonify({
-        "message": "Login successful",
-        "user": user_response
+        'token': token,
+        'user': {
+            'id': str(user['_id']),
+            'username': user['username'],
+            'email': user['email']
+        }
+    }), 201
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not all([email, password]):
+        return jsonify({'error': 'Email and password are required'}), 400
+    
+    # Get user by email
+    user = get_user_by_email(email)
+    if not user:
+        return jsonify({'error': 'Invalid email or password'}), 401
+    
+    # Verify password
+    if not verify_password(password, user['password_hash']):
+        return jsonify({'error': 'Invalid email or password'}), 401
+    
+    # Generate token
+    token = generate_token(user['_id'])
+    
+    return jsonify({
+        'token': token,
+        'user': {
+            'id': str(user['_id']),
+            'username': user['username'],
+            'email': user['email']
+        }
     })
 
 # Scheduling helper endpoint

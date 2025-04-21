@@ -1,84 +1,87 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import '../styles/Auth.css';
+import { useNavigate } from 'react-router-dom';
 import NavBar from '../components/NavBar';
+import '../styles/Login.css';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [formError, setFormError] = useState('');
-  const { login, loading, error } = useAuth();
+  const [formData, setFormData] = useState({
+    username: '',
+    password: ''
+  });
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError('');
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+    
     // Simple validation
-    if (!username || !password) {
-      setFormError('Please enter both username and password');
+    if (!formData.username || !formData.password) {
+      setError('Please enter both username and password');
       return;
     }
-
-    const success = await login({ username, password });
-    if (success) {
-      navigate('/');
+    
+    // Mock login - in a real app, this would call an API
+    if (formData.username === 'demo' && formData.password === 'password') {
+      // Store login state in localStorage
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('username', formData.username);
+      
+      // Redirect to profile page
+      navigate('/profile');
+    } else {
+      setError('Invalid username or password');
     }
   };
 
   return (
     <div className="page-container">
       <NavBar />
-      <div className="auth-container">
-        <div className="auth-card">
-          <div className="auth-header">
-            <h1>Login</h1>
-            <p>Sign in to your account</p>
+      <div className="login-container">
+        <h1 className="login-title">Login</h1>
+        
+        {error && <div className="error-message">{error}</div>}
+        
+        <form className="login-form" onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="username">Username</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              placeholder="Enter your username"
+            />
           </div>
-
-          <form className="auth-form" onSubmit={handleSubmit}>
-            {(formError || error) && (
-              <div className="error-message">
-                {formError || error}
-              </div>
-            )}
-
-            <div className="form-group">
-              <label htmlFor="username">Username</label>
-              <input
-                type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
-                disabled={loading}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                disabled={loading}
-              />
-            </div>
-
-            <button type="submit" className="auth-button" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-
-          <div className="auth-footer">
-            <p>
-              Don't have an account?{' '}
-              <Link to="/register">Create an account</Link>
-            </p>
+          
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Enter your password"
+            />
           </div>
+          
+          <div className="form-actions">
+            <button type="submit" className="login-button">Login</button>
+          </div>
+        </form>
+        
+        <div className="login-footer">
+          <p>Demo credentials: username: demo, password: password</p>
         </div>
       </div>
     </div>

@@ -1,261 +1,159 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NavBar from '../components/NavBar';
-import { useAuth } from '../contexts/AuthContext';
-import API from '../services/api';
 import '../styles/Profile.css';
 
 const Profile = () => {
-  const { currentUser, isAuthenticated, logout } = useAuth();
-  const navigate = useNavigate();
-  
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  
-  // User statistics
-  const [stats, setStats] = useState({
-    totalEvents: 0,
-    totalTasks: 0,
-    completedTasks: 0,
-    upcomingEvents: 0
-  });
-  
-  // Redirect if not authenticated
+  const [profileImage, setProfileImage] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const navigate = useNavigate();
+
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Check if user is logged in
+    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const storedUsername = localStorage.getItem('username');
+    const storedImage = localStorage.getItem('profileImage');
+    
+    setIsLoggedIn(loggedIn);
+    setUsername(storedUsername || '');
+    setProfileImage(storedImage || '');
+    
+    // If not logged in, redirect to login page
+    if (!loggedIn) {
       navigate('/login');
-      return;
     }
-    
-    // Set initial form values
-    if (currentUser) {
-      setUsername(currentUser.username || '');
-      setEmail(currentUser.email || '');
-    }
-    
-    // Fetch user statistics
-    const fetchUserStats = async () => {
-      try {
-        // Get user's events and tasks
-        const [events, tasks] = await Promise.all([
-          API.events.getAllEvents(),
-          API.tasks.getAllTasks()
-        ]);
-        
-        // Filter for user's items
-        const userEvents = events.filter(event => 
-          event.user_id === currentUser._id
-        );
-        
-        const userTasks = tasks.filter(task => 
-          task.user_id === currentUser._id
-        );
-        
-        // Calculate statistics
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const upcomingEvents = userEvents.filter(event => 
-          new Date(event.date) >= today
-        );
-        
-        const completedTasks = userTasks.filter(task => 
-          task.status === 'completed'
-        );
-        
-        setStats({
-          totalEvents: userEvents.length,
-          totalTasks: userTasks.length,
-          completedTasks: completedTasks.length,
-          upcomingEvents: upcomingEvents.length
-        });
-        
-      } catch (error) {
-        console.error('Error fetching user statistics:', error);
-      }
-    };
-    
-    fetchUserStats();
-  }, [currentUser, isAuthenticated, navigate]);
-  
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    
-    // Validate form
-    if (password && password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    
-    // Only include password if it's been changed
-    const updateData = {
-      username,
-      email
-    };
-    
-    if (password) {
-      updateData.password = password;
-    }
-    
-    try {
-      setLoading(true);
-      
-      // In a real application, you would update the user profile here
-      // For this demo, we'll just simulate a successful update
-      setTimeout(() => {
-        setSuccess('Profile updated successfully');
-        setPassword('');
-        setConfirmPassword('');
-        setLoading(false);
-      }, 1000);
-      
-    } catch (error) {
-      setError('Failed to update profile');
-      setLoading(false);
+  }, [navigate]);
+
+  // Mock user data
+  const user = {
+    name: username || 'John Doe',
+    email: `${username || 'john.doe'}@example.com`,
+    role: 'User',
+    joinDate: 'January 2024',
+    preferences: {
+      theme: 'Light',
+      notifications: 'Enabled',
+      timeFormat: '12-hour'
     }
   };
-  
+
   const handleLogout = () => {
-    logout();
+    // Clear login state
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('username');
+    localStorage.removeItem('profileImage');
+    
+    // Redirect to login page
     navigate('/login');
   };
-  
-  if (!isAuthenticated) return null;
-  
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setIsUploading(true);
+    
+    // Check if file is an image
+    if (!file.type.match('image.*')) {
+      alert('Please select an image file');
+      setIsUploading(false);
+      return;
+    }
+    
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image size should be less than 2MB');
+      setIsUploading(false);
+      return;
+    }
+    
+    const reader = new FileReader();
+    
+    reader.onload = (event) => {
+      // Store the image in localStorage
+      localStorage.setItem('profileImage', event.target.result);
+      setProfileImage(event.target.result);
+      setIsUploading(false);
+    };
+    
+    reader.onerror = () => {
+      alert('Error reading file');
+      setIsUploading(false);
+    };
+    
+    reader.readAsDataURL(file);
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current.click();
+  };
+
+  // If not logged in, don't render the profile
+  if (!isLoggedIn) {
+    return null;
+  }
+
   return (
     <div className="page-container">
       <NavBar />
       <div className="profile-container">
+        <h1 className="profile-title">User Profile</h1>
+        
         <div className="profile-header">
-          <div className="profile-avatar">
-            <span className="avatar-placeholder">
-              {currentUser.username ? currentUser.username[0].toUpperCase() : '?'}
-            </span>
+          <div className="profile-avatar" onClick={triggerFileInput}>
+            {profileImage ? (
+              <img src={profileImage} alt="Profile" className="profile-image" />
+            ) : (
+              <span className="avatar-icon">👤</span>
+            )}
+            <div className="upload-overlay">
+              <span className="upload-icon">📷</span>
+            </div>
           </div>
-          <h1>{currentUser.username}</h1>
-          <p className="profile-email">{currentUser.email}</p>
-        </div>
-        
-        <div className="profile-stats">
-          <div className="stat-card">
-            <span className="stat-value">{stats.totalEvents}</span>
-            <span className="stat-label">Total Events</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-value">{stats.upcomingEvents}</span>
-            <span className="stat-label">Upcoming Events</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-value">{stats.totalTasks}</span>
-            <span className="stat-label">Total Tasks</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-value">
-              {stats.totalTasks > 0 
-                ? Math.round((stats.completedTasks / stats.totalTasks) * 100) 
-                : 0}%
-            </span>
-            <span className="stat-label">Completion Rate</span>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImageUpload} 
+            accept="image/*" 
+            style={{ display: 'none' }} 
+          />
+          <div className="profile-info">
+            <h2 className="profile-name">{user.name}</h2>
+            <p className="profile-email">{user.email}</p>
+            <p className="profile-role">{user.role}</p>
           </div>
         </div>
         
-        <div className="profile-content">
-          <div className="profile-section">
-            <h2>Edit Profile</h2>
-            
-            {error && <div className="error-message">{error}</div>}
-            {success && <div className="success-message">{success}</div>}
-            
-            <form onSubmit={handleSubmit} className="profile-form">
-              <div className="form-group">
-                <label htmlFor="username">Username</label>
-                <input
-                  type="text"
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="email">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="password">New Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                  placeholder="Leave blank to keep current password"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="confirmPassword">Confirm New Password</label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={loading}
-                  placeholder="Leave blank to keep current password"
-                />
-              </div>
-              
-              <div className="profile-actions">
-                <button type="submit" className="update-button" disabled={loading}>
-                  {loading ? 'Updating...' : 'Update Profile'}
-                </button>
-              </div>
-            </form>
+        <div className="profile-section">
+          <h3 className="section-title">Account Information</h3>
+          <div className="info-item">
+            <span className="info-label">Member Since:</span>
+            <span className="info-value">{user.joinDate}</span>
           </div>
-          
-          <div className="profile-section">
-            <h2>Account Settings</h2>
-            
-            <div className="setting-item">
-              <div className="setting-details">
-                <h3>Account Status</h3>
-                <p>Your account is active</p>
-              </div>
-              <div className="setting-status active">Active</div>
-            </div>
-            
-            <div className="setting-item">
-              <div className="setting-details">
-                <h3>Member Since</h3>
-                <p>{currentUser.created_at ? new Date(currentUser.created_at).toLocaleDateString() : 'N/A'}</p>
-              </div>
-            </div>
-            
-            <div className="danger-zone">
-              <h3>Danger Zone</h3>
-              <button onClick={handleLogout} className="logout-button">
-                Logout
-              </button>
-              <button className="delete-account-button">
-                Delete Account
-              </button>
-            </div>
+        </div>
+        
+        <div className="profile-section">
+          <h3 className="section-title">Preferences</h3>
+          <div className="info-item">
+            <span className="info-label">Theme:</span>
+            <span className="info-value">{user.preferences.theme}</span>
           </div>
+          <div className="info-item">
+            <span className="info-label">Notifications:</span>
+            <span className="info-value">{user.preferences.notifications}</span>
+          </div>
+          <div className="info-item">
+            <span className="info-label">Time Format:</span>
+            <span className="info-value">{user.preferences.timeFormat}</span>
+          </div>
+        </div>
+        
+        <div className="profile-actions">
+          <button className="edit-button">Edit Profile</button>
+          <button className="logout-button" onClick={handleLogout}>Logout</button>
         </div>
       </div>
     </div>

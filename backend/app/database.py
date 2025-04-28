@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Get MongoDB connection string from environment variable or use default
-MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
+# Get MongoDB connection string from environment variable
+MONGO_URI = os.getenv('MONGO_URI')
 DB_NAME = os.getenv('DB_NAME', 'dynamic_scheduling')
 
 # Create MongoDB client

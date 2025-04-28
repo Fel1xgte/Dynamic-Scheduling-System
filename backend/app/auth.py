@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 from .database import get_user_by_email, create_user
+from functools import wraps
+from flask import request, jsonify
 
 # Load environment variables
 load_dotenv()
@@ -12,6 +14,34 @@ load_dotenv()
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your-secret-key')
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_DELTA = timedelta(days=1)
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        
+        # Get token from header
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+        
+        if not token:
+            return jsonify({'error': 'Token is missing'}), 401
+        
+        try:
+            # Verify token
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            user_id = payload['user_id']
+        except jwt.ExpiredSignatureError:
+            return jsonify({'error': 'Token has expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'error': 'Invalid token'}), 401
+        
+        # Add user_id to kwargs
+        kwargs['user_id'] = user_id
+        return f(*args, **kwargs)
+    
+    return decorated
 
 def hash_password(password):
     """Hash a password using bcrypt."""

@@ -2,14 +2,13 @@
 
 ## Overview of Project
 
-This project is a smart scheduling tool that helps users manage their time more efficiently. It resolves conflicts, ranks tasks based on priority, and uses NLP to extract tasks from user input and provide scheduling suggestions. The goal is to make scheduling intuitive and effortless, allowing users to focus on what matters most.
+This project is a smart scheduling tool that helps users manage their time more efficiently. The goal is to make scheduling intuitive and effortless, allowing users to focus on what matters most.
 
 ## Tech Stack
 
 - **Frontend:** React.js, CSS, MUI  
 - **Backend:** Flask (Python)  
 - **Database:** MongoDB  
-- **Authentication:** Firebase
 
 ## Setup Instructions
 

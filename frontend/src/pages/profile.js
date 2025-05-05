@@ -4,46 +4,35 @@ import NavBar from '../components/NavBar';
 import '../styles/Profile.css';
 
 const Profile = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState('');
+  const [user, setUser] = useState(null);
   const [profileImage, setProfileImage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in
-    const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const storedUsername = localStorage.getItem('username');
-    const storedImage = localStorage.getItem('profileImage');
+    // Get user data from localStorage
+    const userData = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
     
-    setIsLoggedIn(loggedIn);
-    setUsername(storedUsername || '');
-    setProfileImage(storedImage || '');
+    if (!userData || !token) {
+      navigate('/login');
+      return;
+    }
     
-    // If not logged in, redirect to login page
-    if (!loggedIn) {
+    try {
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+    } catch (error) {
+      console.error('Error parsing user data:', error);
       navigate('/login');
     }
   }, [navigate]);
 
-  // Mock user data
-  const user = {
-    name: username || 'John Doe',
-    email: `${username || 'john.doe'}@example.com`,
-    role: 'User',
-    joinDate: 'January 2024',
-    preferences: {
-      theme: 'Light',
-      notifications: 'Enabled',
-      timeFormat: '12-hour'
-    }
-  };
-
   const handleLogout = () => {
-    // Clear login state
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('username');
+    // Clear all auth data
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     localStorage.removeItem('profileImage');
     
     // Redirect to login page
@@ -91,8 +80,8 @@ const Profile = () => {
     fileInputRef.current.click();
   };
 
-  // If not logged in, don't render the profile
-  if (!isLoggedIn) {
+  // If no user data, don't render the profile
+  if (!user) {
     return null;
   }
 
@@ -121,38 +110,17 @@ const Profile = () => {
             style={{ display: 'none' }} 
           />
           <div className="profile-info">
-            <h2 className="profile-name">{user.name}</h2>
+            <h2 className="profile-name">
+              {user.first_name && user.last_name 
+                ? `${user.first_name} ${user.last_name}`
+                : user.username}
+            </h2>
             <p className="profile-email">{user.email}</p>
-            <p className="profile-role">{user.role}</p>
-          </div>
-        </div>
-        
-        <div className="profile-section">
-          <h3 className="section-title">Account Information</h3>
-          <div className="info-item">
-            <span className="info-label">Member Since:</span>
-            <span className="info-value">{user.joinDate}</span>
-          </div>
-        </div>
-        
-        <div className="profile-section">
-          <h3 className="section-title">Preferences</h3>
-          <div className="info-item">
-            <span className="info-label">Theme:</span>
-            <span className="info-value">{user.preferences.theme}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Notifications:</span>
-            <span className="info-value">{user.preferences.notifications}</span>
-          </div>
-          <div className="info-item">
-            <span className="info-label">Time Format:</span>
-            <span className="info-value">{user.preferences.timeFormat}</span>
+            <p className="profile-role">Member since {new Date(user.created_at).toLocaleDateString()}</p>
           </div>
         </div>
         
         <div className="profile-actions">
-          <button className="edit-button">Edit Profile</button>
           <button className="logout-button" onClick={handleLogout}>Logout</button>
         </div>
       </div>

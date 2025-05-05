@@ -5,7 +5,7 @@ import '../styles/Login.css';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    username: '',
+    identifier: '', // This will store either username or email
     password: ''
   });
   const [error, setError] = useState('');
@@ -19,26 +19,42 @@ const Login = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
     // Simple validation
-    if (!formData.username || !formData.password) {
-      setError('Please enter both username and password');
+    if (!formData.identifier || !formData.password) {
+      setError('Please enter both username/email and password');
       return;
     }
     
-    // Mock login - in a real app, this would call an API
-    if (formData.username === 'demo' && formData.password === 'password') {
-      // Store login state in localStorage
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('username', formData.username);
-      
-      // Redirect to profile page
-      navigate('/profile');
-    } else {
-      setError('Invalid username or password');
+    try {
+      const response = await fetch('http://localhost:5001/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          identifier: formData.identifier,
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store login state and token
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Redirect to profile page
+        navigate('/profile');
+      } else {
+        setError(data.error || 'Invalid username/email or password');
+      }
+    } catch (err) {
+      setError('An error occurred during login');
     }
   };
 
@@ -52,14 +68,14 @@ const Login = () => {
         
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="identifier">Username or Email</label>
             <input
               type="text"
-              id="username"
-              name="username"
-              value={formData.username}
+              id="identifier"
+              name="identifier"
+              value={formData.identifier}
               onChange={handleChange}
-              placeholder="Enter your username"
+              placeholder="Enter your username or email"
             />
           </div>
           
@@ -81,7 +97,7 @@ const Login = () => {
         </form>
         
         <div className="login-footer">
-          <p>Demo credentials: username: demo, password: password</p>
+          <p>Don't have an account? <a href="/register">Register here</a></p>
         </div>
       </div>
     </div>

@@ -9,7 +9,7 @@ class User:
         self.password_hash = password_hash
         self.created_at = datetime.utcnow()
         self.profile_image = None
-
+    
     def to_dict(self):
         return {
             'first_name': self.first_name,
@@ -19,7 +19,7 @@ class User:
             'created_at': self.created_at,
             'profile_image': self.profile_image
         }
-
+    
     @classmethod
     def from_dict(cls, data):
         return cls(
@@ -34,14 +34,14 @@ class Participant:
         self.name = name
         self.email = email
         self.role = role
-
+    
     def to_dict(self):
         return {
             'name': self.name,
             'email': self.email,
             'role': self.role
         }
-
+    
     @classmethod
     def from_dict(cls, data):
         return cls(
@@ -60,7 +60,7 @@ class Event:
         self.category = category
         self.user_id = user_id
         self.created_at = datetime.utcnow()
-
+    
     def to_dict(self):
         return {
             'title': self.title,
@@ -72,7 +72,7 @@ class Event:
             'user_id': self.user_id,
             'created_at': self.created_at
         }
-
+    
     @classmethod
     def from_dict(cls, data):
         return cls(

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import NavBar from '../components/NavBar';
 import Calendar from '../components/Calendar';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,7 +7,10 @@ import '../styles/Landing.css';
 
 const Landing = () => {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState('');
+  const [events, setEvents] = useState([]);
+  const [error, setError] = useState('');
 
   // Update current time every minute
   useEffect(() => {
@@ -34,15 +37,51 @@ const Landing = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  // Mock tasks data with dates
-  const tasks = [
-    { id: 1, title: 'Complete project proposal', priority: 'high', day: 5 },
-    { id: 2, title: 'Review team presentations', priority: 'medium', day: 10 },
-    { id: 3, title: 'Schedule weekly meetings', priority: 'medium', day: 15 },
-    { id: 4, title: 'Update documentation', priority: 'low', day: 20 },
-    { id: 5, title: 'Send progress report', priority: 'high', day: 25 },
-    { id: 6, title: 'Prepare for client meeting', priority: 'low', day: 28 },
-  ];
+  // Fetch events from backend
+  useEffect(() => {
+    const fetchEvents = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:5001/api/events', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            // Token expired or invalid
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            navigate('/login');
+            return;
+          }
+          throw new Error('Failed to fetch events');
+        }
+
+        const data = await response.json();
+        setEvents(data);
+      } catch (err) {
+        setError('Error loading events');
+        console.error('Error fetching events:', err);
+      }
+    };
+
+    fetchEvents();
+  }, [navigate]);
+
+  // Convert events to tasks format for calendar
+  const tasks = events.map(event => ({
+    id: event.event_id,
+    title: event.title,
+    priority: event.priority,
+    day: new Date(event.date).getDate()
+  }));
 
   return (
     <div className="page-container">
@@ -71,15 +110,24 @@ const Landing = () => {
             <div className="tasks-header">
               <h2 className="tasks-title">Tasks</h2>
             </div>
+            {error && <div className="error-message">{error}</div>}
             <div className="tasks-list">
-              {tasks.map(task => (
+              {events.map(event => (
                 <div 
-                  key={task.id} 
-                  className={`task-item task-${task.priority}`}
+                  key={event.event_id} 
+                  className={`task-item task-${event.priority}`}
                 >
-                  {task.title}
+                  <div className="task-content">
+                    <span className="task-title">{event.title}</span>
+                    <span className="task-date">
+                      {new Date(event.date).toLocaleDateString()} {event.time}
+                    </span>
+                  </div>
                 </div>
               ))}
+              {events.length === 0 && (
+                <div className="empty-state">No events scheduled</div>
+              )}
             </div>
           </div>
         </div>

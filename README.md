@@ -73,7 +73,7 @@ Password: password123
 
 1. **User Input:** Users enter tasks or events through the frontend.  
 2. **Data Processing:** The backend extracts relevant details using NLP, ranks tasks based on priority, and resolves conflicts.  
-3. **Storage & Retrieval:** Processed events are stored in MongoDB and retrieved when needed.  
+3. **Storage & Retrieval:** Processed events are stored with MongoDB and retrieved when needed.  
 4. **Suggestions & Updates:** The system provides optimized scheduling suggestions and updates the user's calendar.
 
 ## Key Components

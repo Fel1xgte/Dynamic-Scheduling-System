@@ -2,7 +2,7 @@
 
 ## Overview of Project
 
-This project is a smart scheduling tool that helps users manage their time more efficiently. The goal is to make scheduling intuitive and effortless, allowing users to focus on what matters most.
+This project is a smart scheduling tool that helps users manage their time more efficiently. The goal is to make scheduling intuitive and effortless, allowing users to focus on what matters the most.
 
 ## Tech Stack
 

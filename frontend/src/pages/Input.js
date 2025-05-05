@@ -13,6 +13,7 @@ const Input = () => {
     priority: 'medium',
     category: 'work'
   });
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -22,13 +23,39 @@ const Input = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically save the event to your backend
-    console.log('Event data:', formData);
-    
-    // For now, we'll just navigate back to the home page
-    navigate('/');
+    setError('');
+
+    try {
+      const response = await fetch('http://localhost:5001/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description || '',
+          date: formData.date,
+          time: formData.time,
+          priority: formData.priority,
+          category: formData.category
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Event created successfully
+        navigate('/');
+      } else {
+        setError(data.error || 'Failed to create event');
+      }
+    } catch (err) {
+      setError('An error occurred while creating the event');
+      console.error('Error creating event:', err);
+    }
   };
 
   return (
@@ -41,6 +68,8 @@ const Input = () => {
           </div>
           <h1 className="input-title">Add New Event</h1>
         </div>
+        
+        {error && <div className="error-message">{error}</div>}
         
         <form className="input-form" onSubmit={handleSubmit}>
           <div className="form-group">

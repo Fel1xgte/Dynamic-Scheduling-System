@@ -7,9 +7,12 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Use local MongoDB connection
-MONGO_URI = 'mongodb://localhost:27017/'
-DB_NAME = 'dynamic_scheduling'
+# Get MongoDB Atlas connection string from environment variables
+MONGO_URI = os.getenv('MONGO_URI')
+DB_NAME = os.getenv('DB_NAME', 'dynamic_scheduling')
+
+if not MONGO_URI:
+    raise ValueError("MongoDB connection string not found. Please set MONGO_URI in .env file")
 
 # Create MongoDB client
 client = MongoClient(MONGO_URI)
@@ -21,11 +24,15 @@ events_collection = db.events
 
 def init_db():
     """Initialize the database with required indexes and collections."""
-    # Create indexes
-    users_collection.create_index('email', unique=True)
-    users_collection.create_index('username', unique=True)
-    events_collection.create_index([('user_id', 1), ('date', 1)])
-    events_collection.create_index('date')
+    try:
+        # Create indexes
+        users_collection.create_index('email', unique=True)
+        users_collection.create_index('username', unique=True)
+        events_collection.create_index([('user_id', 1), ('date', 1)])
+        events_collection.create_index('date')
+        print("Database initialized successfully")
+    except Exception as e:
+        print(f"Error initializing database: {str(e)}")
 
 # User operations
 def create_user(username, email, password_hash):

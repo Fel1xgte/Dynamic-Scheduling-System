@@ -44,7 +44,7 @@ def login():
         return jsonify({'error': 'Invalid username/email or password'}), 401
     
     # Generate token
-    token = generate_token(user_data['_id'])
+    token = generate_token(str(user_data['_id']))
     
     # Convert ObjectId to string for JSON serialization
     user_data['user_id'] = str(user_data['_id'])
@@ -177,6 +177,7 @@ def get_events(**kwargs):
         
         return jsonify(events)
     except Exception as e:
+        print(f"Error in get_events: {str(e)}")  # Add logging
         return jsonify({'error': str(e)}), 400
 
 @main.route('/api/events', methods=['POST'])
@@ -187,11 +188,19 @@ def create_event(**kwargs):
     
     try:
         # Create new event
-        new_event = Event.from_dict(data)
-        new_event.user_id = ObjectId(user_id)
+        event_data = {
+            'user_id': ObjectId(user_id),
+            'title': data.get('title'),
+            'description': data.get('description', ''),
+            'date': datetime.fromisoformat(data.get('date')),
+            'time': data.get('time'),
+            'priority': data.get('priority'),
+            'category': data.get('category'),
+            'created_at': datetime.utcnow()
+        }
         
         # Insert event into database
-        result = events_collection.insert_one(new_event.to_dict())
+        result = events_collection.insert_one(event_data)
         
         # Get the created event
         event_data = events_collection.find_one({"_id": result.inserted_id})
@@ -202,6 +211,7 @@ def create_event(**kwargs):
         
         return jsonify({'success': True, 'event': event_data}), 201
     except Exception as e:
+        print(f"Error in create_event: {str(e)}")  # Add logging
         return jsonify({'error': str(e)}), 400
 
 @main.route('/api/events/<event_id>', methods=['GET'])

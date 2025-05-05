@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from .database import get_user_by_email, create_user
 from functools import wraps
 from flask import request, jsonify
+from bson.objectid import ObjectId
 
 # Load environment variables
 load_dotenv()
@@ -32,14 +33,24 @@ def token_required(f):
             # Verify token
             payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
             user_id = payload['user_id']
+            
+            # Convert string user_id to ObjectId if needed
+            if isinstance(user_id, str):
+                try:
+                    user_id = ObjectId(user_id)
+                except:
+                    return jsonify({'error': 'Invalid user ID format'}), 401
+            
+            # Add user_id to kwargs
+            kwargs['user_id'] = user_id
+            return f(*args, **kwargs)
         except jwt.ExpiredSignatureError:
             return jsonify({'error': 'Token has expired'}), 401
         except jwt.InvalidTokenError:
             return jsonify({'error': 'Invalid token'}), 401
-        
-        # Add user_id to kwargs
-        kwargs['user_id'] = user_id
-        return f(*args, **kwargs)
+        except Exception as e:
+            print(f"Error in token_required: {str(e)}")  # Add logging
+            return jsonify({'error': 'Token verification failed'}), 401
     
     return decorated
 

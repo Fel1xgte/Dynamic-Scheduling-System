@@ -105,6 +105,24 @@
   margin-bottom: 10px;
 }
 
+.task-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.task-title {
+  flex: 1;
+}
+
+.task-date {
+  font-size: 0.9em;
+  color: #666;
+  margin-left: 20px;
+  white-space: nowrap;
+}
+
 .task-high {
   background-color: #FFE5E5;
   color: #FF4444;
@@ -302,12 +320,19 @@
 }
 
 .empty-state {
-  color: #a1a1aa;
   text-align: center;
-  padding: 2rem;
-  background-color: #f9fafb;
-  border-radius: 8px;
+  padding: 20px;
+  color: #666;
   font-style: italic;
+}
+
+.error-message {
+  background-color: #FFE5E5;
+  color: #FF4444;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  text-align: center;
 }
 
 .view-all {

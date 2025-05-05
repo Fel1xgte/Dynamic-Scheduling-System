@@ -5,7 +5,13 @@ from .database import init_db
 
 def create_app():
     app = Flask(__name__)
-    CORS(app)
+    
+    # Configure CORS - more permissive for development
+    CORS(app, 
+         resources={r"/api/*": {"origins": "*"}},
+         supports_credentials=True,
+         allow_headers=["Content-Type", "Authorization"],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
     
     # Configure upload folder
     app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')

@@ -19,17 +19,29 @@ def allowed_file(filename):
 @main.route('/api/login', methods=['POST'])
 def login():
     data = request.json
-    email = data.get('email')
+    identifier = data.get('identifier')  # This can be either username or email
     password = data.get('password')
     
-    if not email or not password:
-        return jsonify({'error': 'Email and password are required'}), 400
+    if not identifier or not password:
+        return jsonify({'error': 'Username/email and password are required'}), 400
     
-    # Find user by email
-    user_data = users_collection.find_one({"email": email})
+    # Try to find user by email first
+    user_data = users_collection.find_one({"email": identifier})
     
-    if not user_data or not verify_password(password, user_data['password_hash']):
-        return jsonify({'error': 'Invalid email or password'}), 401
+    # If not found by email, try username
+    if not user_data:
+        user_data = users_collection.find_one({"username": identifier})
+    
+    if not user_data:
+        return jsonify({'error': 'Invalid username/email or password'}), 401
+    
+    # Check if user has password_hash field
+    if 'password_hash' not in user_data:
+        return jsonify({'error': 'User account needs to be reset. Please contact support.'}), 401
+    
+    # Verify password
+    if not verify_password(password, user_data['password_hash']):
+        return jsonify({'error': 'Invalid username/email or password'}), 401
     
     # Generate token
     token = generate_token(user_data['_id'])
@@ -50,47 +62,41 @@ def login():
 @main.route('/api/register', methods=['POST'])
 def register():
     data = request.json
-    first_name = data.get('first_name')
-    last_name = data.get('last_name')
     email = data.get('email')
+    username = data.get('username')
     password = data.get('password')
+    first_name = data.get('first_name', '')  # Optional
+    last_name = data.get('last_name', '')    # Optional
     
-    if not all([first_name, last_name, email, password]):
+    if not email or not username or not password:
         return jsonify({'error': 'All fields are required'}), 400
     
-    # Check if email already exists
+    # Check if user already exists
     if users_collection.find_one({"email": email}):
-        return jsonify({'error': 'Email already registered'}), 409
+        return jsonify({'error': 'Email already registered'}), 400
+    
+    if users_collection.find_one({"username": username}):
+        return jsonify({'error': 'Username already taken'}), 400
     
     # Hash password
     password_hash = hash_password(password)
     
-    # Create new user
-    new_user = User(
-        first_name=first_name,
-        last_name=last_name,
-        email=email,
-        password_hash=password_hash
-    )
+    # Create user
+    user_data = {
+        'email': email,
+        'username': username,
+        'first_name': first_name,
+        'last_name': last_name,
+        'password_hash': password_hash,
+        'created_at': datetime.utcnow()
+    }
     
-    # Insert user into database
-    result = users_collection.insert_one(new_user.to_dict())
-    
-    # Generate token
-    token = generate_token(result.inserted_id)
-    
-    # Get the created user
-    user_data = users_collection.find_one({"_id": result.inserted_id})
-    user_data['user_id'] = str(user_data['_id'])
-    
-    # Remove sensitive data
-    user_data.pop('password_hash', None)
-    user_data.pop('_id', None)
+    result = users_collection.insert_one(user_data)
+    user_data['_id'] = str(result.inserted_id)
     
     return jsonify({
         'success': True,
-        'token': token,
-        'user': user_data
+        'message': 'Registration successful'
     }), 201
 
 @main.route('/api/user/<user_id>', methods=['GET'])
@@ -250,7 +256,7 @@ def update_event(event_id, **kwargs):
         updated_event['user_id'] = str(updated_event['user_id'])
         updated_event['date'] = updated_event['date'].isoformat()
         updated_event.pop('_id', None)
-        
+            
         return jsonify({'success': True, 'event': updated_event})
     except Exception as e:
         return jsonify({'error': str(e)}), 400

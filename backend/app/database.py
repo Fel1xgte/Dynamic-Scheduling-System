@@ -26,28 +26,6 @@ def init_db():
     users_collection.create_index('username', unique=True)
     events_collection.create_index([('user_id', 1), ('date', 1)])
     events_collection.create_index('date')
-    
-    # Check if we need to insert initial data
-    if users_collection.count_documents({}) == 0:
-        # Insert a default user for testing
-        users_collection.insert_one({
-            'email': 'test@example.com',
-            'password': 'password123',  # In production, this should be hashed
-            'name': 'Test User',
-            'profile_image': None
-        })
-
-    # Check if we need to create a demo user
-    if users_collection.count_documents({}) == 0:
-        from .models import User
-        demo_user = User(
-            first_name="Demo",
-            last_name="User",
-            email="demo@example.com",
-            password="password"  # In a real app, this should be hashed
-        )
-        users_collection.insert_one(demo_user.to_dict())
-        print("Created demo user")
 
 # User operations
 def create_user(username, email, password_hash):

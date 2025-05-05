@@ -5,6 +5,7 @@ import Landing from './pages/Landing';
 import Input from './pages/Input';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import './App.css';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
             <Route path="/input" element={<Input />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             
             {/* Fallback route */}
             <Route path="*" element={<Navigate to="/" replace />} />
